@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -71,4 +72,10 @@ dependencies {
 
     // Icon
     implementation(libs.material)
+
+    // Room
+    implementation(libs.androidx.room)
+    implementation(libs.androidx.room.ktx)
+    annotationProcessor(libs.androidx.room.annotation.processor)
+    ksp(libs.androidx.room.annotation.processor)
 }
