@@ -6,9 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.moneyapp.presentation.ui.graphs.Graph
 import com.example.moneyapp.presentation.ui.graphs.MainNavigationGraph
 import com.example.moneyapp.presentation.ui.screens.main.components.BottomBar
+import com.example.moneyapp.presentation.ui.screens.main.components.FloatingButton
+import com.example.moneyapp.presentation.ui.screens.main.components.TopBar
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 
 @Composable
@@ -17,13 +18,16 @@ fun MainScreen(
     viewModel: MoneyViewModel
 ) {
     Scaffold(
-        bottomBar = { BottomBar(navController = navController) }
+        topBar = { TopBar(navController = navController, viewModel = viewModel) },
+        bottomBar = { BottomBar(navController = navController) },
+        floatingActionButton = {
+            FloatingButton(navController = navController, viewModel = viewModel)
+        }
     ) { innerPadding ->
-        val modifier = Modifier.padding(innerPadding)
         MainNavigationGraph(
             navController = navController,
             viewModel = viewModel,
-            modifier = modifier
+            modifier = Modifier.padding(innerPadding)
         )
     }
 }

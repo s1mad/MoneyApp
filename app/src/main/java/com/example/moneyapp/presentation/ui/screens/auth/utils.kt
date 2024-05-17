@@ -8,7 +8,7 @@ fun getErrorsList(
 ): MutableList<String> = mutableListOf<String>().apply {
     name?.let {
         if (it.isBlank()) add("Name is empty")
-        if (it.length < 5) add("Name less than 5")
+        if (it.length < 3) add("Name less than 3")
         if (it.length > 32) add("Name greater than 32")
         if (!Regex("[a-zA-Z0-9]+").matches(it)) add("Name contains special characters")
     }

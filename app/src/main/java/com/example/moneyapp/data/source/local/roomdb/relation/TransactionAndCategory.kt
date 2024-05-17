@@ -7,7 +7,7 @@ import com.example.moneyapp.data.source.local.roomdb.entity.Category
 import com.example.moneyapp.data.source.local.roomdb.entity.Transaction
 import com.example.moneyapp.data.source.local.roomdb.entity.TransactionCategory
 
-data class TransactionWithCategories(
+data class TransactionAndCategory(
     @Embedded
     val transaction: Transaction,
 
@@ -20,5 +20,5 @@ data class TransactionWithCategories(
             entityColumn = "categoryId"
         )
     )
-    val categories: List<Category>
+    val category: Category?
 )

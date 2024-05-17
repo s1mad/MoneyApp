@@ -11,21 +11,12 @@ import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 fun RootNavigationGraph(navController: NavHostController, viewModel: MoneyViewModel) {
     NavHost(
         navController = navController,
-        startDestination = Graph.AUTH,
+        startDestination = if (viewModel.currentUser.value == null) Graph.AUTH else Graph.MAIN,
         route = Graph.ROOT
     ) {
         authNavigationGraph(navController = navController, viewModel = viewModel)
         composable(route = Graph.MAIN) {
             MainScreen(viewModel = viewModel)
-        }
-    }
-    if (viewModel.currentUser.value == null) {
-        navController.navigate(Graph.AUTH) {
-            popUpTo(Graph.ROOT) { inclusive = true }
-        }
-    } else {
-        navController.navigate(Graph.MAIN) {
-            popUpTo(Graph.ROOT) { inclusive = true }
         }
     }
 }
@@ -34,5 +25,4 @@ object Graph {
     const val ROOT = "ROOT_GRAPH"
     const val AUTH = "AUTH_GRAPH"
     const val MAIN = "MAIN_GRAPH"
-    const val DETAILS = "DETAILS_GRAPH"
 }

@@ -2,13 +2,14 @@ package com.example.moneyapp.data.source.local.roomdb.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
-import androidx.room.Upsert
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import com.example.moneyapp.data.source.local.roomdb.entity.TransactionCategory
 
 @Dao
 interface TransactionCategoryDao {
-    @Upsert
-    suspend fun upsertTransactionCategory(transactionCategory: TransactionCategory)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTransactionCategory(transactionCategory: TransactionCategory) : Long
 
     @Delete
     suspend fun deleteTransactionCategory(transactionCategory: TransactionCategory)

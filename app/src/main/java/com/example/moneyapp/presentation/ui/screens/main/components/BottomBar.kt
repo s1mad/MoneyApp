@@ -2,10 +2,11 @@ package com.example.moneyapp.presentation.ui.screens.main.components
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -17,6 +18,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.moneyapp.presentation.ui.graphs.MainScreen
 
 @Composable
 fun BottomBar(navController: NavHostController) {
@@ -31,7 +33,10 @@ fun BottomBar(navController: NavHostController) {
 
     val bottomBarDestination = screens.any { it.route == currentDestination?.route }
     if (bottomBarDestination) {
-        NavigationBar {
+        NavigationBar(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ) {
             screens.forEach { screen ->
                 AddNavigationBarItem(
                     screen = screen,
@@ -70,19 +75,19 @@ sealed class BottomBarScreen(
     val icon: ImageVector
 ) {
     data object Accounts : BottomBarScreen(
-        route = "ACCOUNTS",
+        route = MainScreen.Accounts.route,
         title = "Accounts",
-        icon = Icons.Default.Home
+        icon = Icons.Default.CreditCard
     )
 
     data object Transactions : BottomBarScreen(
-        route = "TRANSACTIONS",
+        route = MainScreen.Transactions.route,
         title = "Transactions",
-        icon = Icons.Default.Email
+        icon = Icons.Default.Checklist
     )
 
     data object Settings : BottomBarScreen(
-        route = "SETTINGS",
+        route = MainScreen.Settings.route,
         title = "Settings",
         icon = Icons.Default.Settings
     )

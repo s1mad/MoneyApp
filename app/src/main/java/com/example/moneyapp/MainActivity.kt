@@ -25,7 +25,9 @@ class MainActivity : ComponentActivity() {
             applicationContext,
             MoneyDatabase::class.java,
             "MoneyDatabase.db"
-        ).build()
+        )
+            .createFromAsset("database/prepopulating_banks.db")
+            .build()
     }
 
     private val viewModel by viewModels<MoneyViewModel>(
@@ -38,7 +40,8 @@ class MainActivity : ComponentActivity() {
                             database.accountDao,
                             database.moneyTransactionDao,
                             database.categoryDao,
-                            database.transactionCategoryDao
+                            database.transactionCategoryDao,
+                            database.bankDao
                         ),
                         sharedPreferences = this@MainActivity.getSharedPreferences(
                             "preferences",
@@ -58,7 +61,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    RootNavigationGraph(navController = rememberNavController(), viewModel = viewModel)
+                    RootNavigationGraph(
+                        navController = rememberNavController(),
+                        viewModel = viewModel
+                    )
                 }
             }
         }

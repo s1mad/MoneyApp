@@ -7,7 +7,11 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "accounts",
-    indices = [Index(value = ["userId"]), Index(value = ["name"], unique = true)],
+    indices = [
+        Index(value = ["userId"]),
+        Index(value = ["bankId"]),
+        Index(value = ["name"], unique = true),
+    ],
     foreignKeys = [
         ForeignKey(
             entity = User::class,
@@ -15,14 +19,19 @@ import androidx.room.PrimaryKey
             childColumns = ["userId"],
             onUpdate = ForeignKey.CASCADE,
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Bank::class,
+            parentColumns = ["id"],
+            childColumns = ["bankId"]
         )
     ]
 )
 data class Account(
     val userId: Long,
+    val bankId: Long?,
     val name: String,
-    val bank: String,
-    val cost: String,
+    val balance: Double,
 
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0

@@ -22,15 +22,21 @@ import java.util.Calendar
 data class Transaction(
     val accountId: Long,
     val operation: Operation,
-    val cost: Long,
-    val date: Long = Calendar.getInstance().timeInMillis,
+    val cost: Double,
     val place: String,
     val comment: String,
+    val date: Long,
     val dataCreated: Long = Calendar.getInstance().timeInMillis,
 
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0
-)
+) {
+    fun getCostOperation() = if (operation == Operation.EXPENSE) -cost else cost
+    companion object {
+        fun getCostOperation(operation: Operation, cost: Double) =
+            if (operation == Operation.EXPENSE) -cost else cost
+    }
+}
 
 enum class Operation {
     EXPENSE,
