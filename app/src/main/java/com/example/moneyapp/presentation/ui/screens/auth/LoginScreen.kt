@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.moneyapp.presentation.ui.graphs.AuthScreen
+import com.example.moneyapp.presentation.utils.getErrorsList
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 
 @Composable

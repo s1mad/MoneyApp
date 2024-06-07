@@ -28,6 +28,7 @@ import androidx.navigation.NavHostController
 import com.example.moneyapp.data.source.local.roomdb.entity.Account
 import com.example.moneyapp.presentation.ui.screens.main.components.ConfirmDeleteDialog
 import com.example.moneyapp.presentation.ui.screens.main.components.OptionsExposedDropdownMenuBox
+import com.example.moneyapp.presentation.utils.Result
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 import kotlin.math.round
 
@@ -45,7 +46,7 @@ fun UpdateAccountDialog(
         val balance = remember { mutableStateOf(account.balance.toString()) }
         val bankId = remember { mutableStateOf(account.bankId) }
 
-        val isSuccessfullyUpdated = remember { mutableStateOf<Boolean?>(null) }
+        val result = remember { mutableStateOf<Result<Account>>(Result.Pending) }
         val showConfirmDeletedDialog = remember { mutableStateOf(false) }
         val context = LocalContext.current
 
@@ -117,7 +118,7 @@ fun UpdateAccountDialog(
                         )
                         viewModel.updateAccount(
                             activeAccount.value,
-                            isSuccessfullyUpdated
+                            result
                         )
 
                     }
@@ -126,16 +127,24 @@ fun UpdateAccountDialog(
                 }
             })
 
-        if (isSuccessfullyUpdated.value == true) {
-            Toast.makeText(context, "Account successfully updated", Toast.LENGTH_LONG).show()
-            isUpdateAccount.value = false
-        } else if (isSuccessfullyUpdated.value == false) {
-            Toast.makeText(context, "Name already in use", Toast.LENGTH_LONG).show()
+        when (result.value) {
+            is Result.Success -> {
+                val message = (result.value as Result.Success).message
+                Toast.makeText(context, "Account successfully updated", Toast.LENGTH_LONG).show()
+                isUpdateAccount.value = false
+            }
+
+            is Result.Error -> {
+                val message = (result.value as Result.Error).exception.message
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+
+            else -> {}
         }
 
         ConfirmDeleteDialog(
             showConfirmDialog = showConfirmDeletedDialog,
-            delete = { viewModel.deleteAccount(account) },
+            delete = { resultOfUpdate -> viewModel.deleteAccount(account, resultOfUpdate) },
             onComplete = {
                 isUpdateAccount.value = false
                 navController.navigateUp()

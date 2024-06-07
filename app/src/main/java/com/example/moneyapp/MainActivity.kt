@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -17,6 +18,7 @@ import com.example.moneyapp.data.repository.MoneyRepository
 import com.example.moneyapp.data.source.local.roomdb.MoneyDatabase
 import com.example.moneyapp.presentation.ui.graphs.RootNavigationGraph
 import com.example.moneyapp.presentation.ui.theme.MoneyAppTheme
+import com.example.moneyapp.presentation.utils.Result
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 
 class MainActivity : ComponentActivity() {
@@ -56,15 +58,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MoneyAppTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    RootNavigationGraph(
-                        navController = rememberNavController(),
-                        viewModel = viewModel
-                    )
+            if (viewModel.currentUser.value is Result.Pending || viewModel.currentUser.value is Result.Loading) {
+                CircularProgressIndicator()
+            } else {
+                MoneyAppTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        RootNavigationGraph(
+                            navController = rememberNavController(),
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }

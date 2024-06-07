@@ -40,6 +40,7 @@ import com.example.moneyapp.presentation.ui.screens.main.components.OptionsExpos
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 import java.util.Calendar
 import kotlin.math.round
+import com.example.moneyapp.presentation.utils.Result
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +62,7 @@ fun UpdateTransactionDialog(
         val comment = remember { mutableStateOf(activeTransaction.transaction.comment) }
 
         val isTransactionUpdated = remember { mutableStateOf<Boolean?>(null) }
-        val isAccountUpdated = remember { mutableStateOf<Boolean?>(null) }
+        val resultOfAccountUpdated = remember { mutableStateOf<Result<Account>>(Result.Pending) }
         val showDatePicker = remember { mutableStateOf(false) }
         val showConfirmDeletedDialog = remember { mutableStateOf(false) }
         val context = LocalContext.current
@@ -196,10 +197,10 @@ fun UpdateTransactionDialog(
                 viewModel.updateAccount(
                     account.copy(
                         balance = account.balance - oldCost + newCost
-                    ), isAccountUpdated
+                    ), resultOfAccountUpdated
                 )
             }
-            categories.find { it.id == categoryId.value }.let {category ->
+            categories.find { it.id == categoryId.value }.let { category ->
                 if (activeTransaction.category != category) {
                     if (category == null && activeTransaction.category != null) {
                         viewModel.deleteTransactionCategory(
@@ -229,9 +230,9 @@ fun UpdateTransactionDialog(
                     }
                 }
             }
-            if (isAccountUpdated.value == true) {
+            if (resultOfAccountUpdated.value == true) {
                 transaction.value = null
-            } else if (isAccountUpdated.value == false) {
+            } else if (resultOfAccountUpdated.value == false) {
                 Toast.makeText(
                     context,
                     "Balance has not been updated",
@@ -259,16 +260,15 @@ fun UpdateTransactionDialog(
         }
         ConfirmDeleteDialog(
             showConfirmDialog = showConfirmDeletedDialog,
-            delete = { viewModel.deleteTransaction(activeTransaction.transaction) },
-            onComplete = {
+            delete = { result ->
                 accounts.find { it.id == accountId.value }?.let { account ->
                     viewModel.updateAccount(
                         account.copy(balance = account.balance - activeTransaction.transaction.getCostOperation()),
-                        mutableStateOf(null)
                     )
                 }
-                transaction.value = null
-            }
+                viewModel.deleteTransaction(activeTransaction.transaction, result)
+            },
+            onComplete = { transaction.value = null }
         )
     }
 }

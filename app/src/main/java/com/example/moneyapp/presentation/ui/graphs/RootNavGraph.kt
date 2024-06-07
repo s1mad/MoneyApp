@@ -5,13 +5,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.moneyapp.presentation.ui.screens.main.MainScreen
+import com.example.moneyapp.presentation.utils.Result
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 
 @Composable
 fun RootNavigationGraph(navController: NavHostController, viewModel: MoneyViewModel) {
     NavHost(
         navController = navController,
-        startDestination = if (viewModel.currentUser.value == null) Graph.AUTH else Graph.MAIN,
+        startDestination = if (viewModel.currentUser.value is Result.Success) Graph.MAIN else Graph.AUTH,
         route = Graph.ROOT
     ) {
         authNavigationGraph(navController = navController, viewModel = viewModel)

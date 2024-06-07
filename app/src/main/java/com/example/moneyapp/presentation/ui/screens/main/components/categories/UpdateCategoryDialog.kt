@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -17,25 +18,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import com.example.moneyapp.data.source.local.roomdb.entity.Category
 import com.example.moneyapp.presentation.ui.screens.main.components.ConfirmDeleteDialog
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
+import com.example.moneyapp.presentation.utils.Result
 
 @Composable
 fun UpdateCategoryDialog(
     category: MutableState<Category?>,
     viewModel: MoneyViewModel
-    ) {
+) {
     category.value?.let { activeCategory ->
         val name = remember { mutableStateOf(activeCategory.name) }
 
-        val isSuccessfullyAdded = remember { mutableStateOf<Boolean?>(null) }
+        val resultOfUpdate = remember { mutableStateOf<Result<Category>>(Result.Pending) }
         val showConfirmDeletedDialog = remember { mutableStateOf(false) }
 
         AlertDialog(
-            title = { Text(text = "Edit Category") },
+            title = {
+                Row {
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        text = "Edit Category"
+                    )
+                    if (resultOfUpdate.value is Result.Loading) CircularProgressIndicator()
+                }
+            },
             text = {
                 OutlinedTextField(
                     value = name.value,
@@ -46,10 +57,15 @@ fun UpdateCategoryDialog(
                     )
                 )
             },
-            onDismissRequest = { category.value = null },
+            onDismissRequest = {
+                if (resultOfUpdate.value !is Result.Loading) category.value = null
+            },
             dismissButton = {
                 Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                    IconButton(onClick = { showConfirmDeletedDialog.value = true }) {
+                    IconButton(
+                        onClick = { showConfirmDeletedDialog.value = true },
+                        enabled = resultOfUpdate.value !is Result.Loading
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete category",
@@ -57,36 +73,50 @@ fun UpdateCategoryDialog(
                         )
                     }
                     Button(
-                        onClick = { category.value = null }) {
+                        onClick = { category.value = null },
+                        enabled = resultOfUpdate.value !is Result.Loading
+                    ) {
                         Text(text = "Cancel")
                     }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    viewModel.updateCategory(
-                        activeCategory.copy(name = name.value),
-                        isSuccessfullyAdded
-                    )
-                }) {
+                Button(
+                    onClick = {
+                        viewModel.updateCategory(
+                            activeCategory.copy(name = name.value),
+                            resultOfUpdate
+                        )
+                    },
+                    enabled = resultOfUpdate.value !is Result.Loading
+                ) {
                     Text(text = "Update")
                 }
             }
         )
-        if (isSuccessfullyAdded.value == true) {
-            Toast.makeText(
+        when (resultOfUpdate.value) {
+            is Result.Success -> {
+                Toast.makeText(
+                    LocalContext.current,
+                    "Category successfully updated",
+                    Toast.LENGTH_SHORT
+                ).show()
+                category.value = null
+            }
+
+            is Result.Error -> Toast.makeText(
                 LocalContext.current,
-                "Category successfully updated",
+                (resultOfUpdate.value as Result.Error).exception.message,
                 Toast.LENGTH_SHORT
-            )
-                .show()
-            category.value = null
-        } else if (isSuccessfullyAdded.value == false) {
-            Toast.makeText(LocalContext.current, "Name already in use", Toast.LENGTH_SHORT).show()
+            ).show()
+
+            else -> {}
         }
+
         ConfirmDeleteDialog(
             showConfirmDialog = showConfirmDeletedDialog,
-            delete = { viewModel.deleteCategory(activeCategory) }
+            delete = { result -> viewModel.deleteCategory(activeCategory, result) },
+            onComplete = { category.value = null }
         )
     }
 }

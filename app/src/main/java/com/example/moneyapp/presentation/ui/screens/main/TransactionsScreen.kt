@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.example.moneyapp.data.source.local.roomdb.entity.Operation
 import com.example.moneyapp.data.source.local.roomdb.relation.TransactionAndCategory
 import com.example.moneyapp.presentation.ui.screens.main.components.transactions.UpdateTransactionDialog
-import com.example.moneyapp.presentation.ui.screens.main.utils.formatDoubleToString
+import com.example.moneyapp.presentation.utils.formatDoubleToString
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 import java.util.Calendar
 

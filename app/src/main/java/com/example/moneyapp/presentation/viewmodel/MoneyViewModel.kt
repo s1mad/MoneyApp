@@ -11,9 +11,9 @@ import com.example.moneyapp.data.source.local.roomdb.entity.Account
 import com.example.moneyapp.data.source.local.roomdb.entity.Bank
 import com.example.moneyapp.data.source.local.roomdb.entity.Category
 import com.example.moneyapp.data.source.local.roomdb.entity.Transaction
-import com.example.moneyapp.data.source.local.roomdb.entity.TransactionCategory
 import com.example.moneyapp.data.source.local.roomdb.entity.User
 import com.example.moneyapp.data.source.local.roomdb.relation.TransactionAndCategory
+import com.example.moneyapp.presentation.utils.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,52 +23,99 @@ class MoneyViewModel(
     private val repository: MoneyRepository,
     private val sharedPreferences: SharedPreferences
 ) : ViewModel() {
-    private val _currentUser: MutableState<User?> = mutableStateOf(null)
+    private val _currentUser: MutableState<Result<User>> = mutableStateOf(Result.Pending)
     val currentUser get() = _currentUser
 
-    private val _accounts = MutableStateFlow<List<Account>>(emptyList())
-    val accounts: StateFlow<List<Account>> = _accounts.asStateFlow()
+    private val _accounts = MutableStateFlow<Result<List<Account>>>(Result.Pending)
+    val accounts: StateFlow<Result<List<Account>>> = _accounts.asStateFlow()
 
-    private val _transactions = MutableStateFlow<List<TransactionAndCategory>>(emptyList())
-    val transactions: StateFlow<List<TransactionAndCategory>> = _transactions.asStateFlow()
+    private val _transactions =
+        MutableStateFlow<Result<List<TransactionAndCategory>>>(Result.Pending)
+    val transactions: StateFlow<Result<List<TransactionAndCategory>>> = _transactions.asStateFlow()
 
-    private val _categories = MutableStateFlow<List<Category>>(emptyList())
-    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
+    private val _categories = MutableStateFlow<Result<List<Category>>>(Result.Pending)
+    val categories: StateFlow<Result<List<Category>>> = _categories.asStateFlow()
 
-    private val _banks = MutableStateFlow<List<Bank>>(emptyList())
-    val banks: StateFlow<List<Bank>> = _banks.asStateFlow()
+    private val _banks = MutableStateFlow<Result<List<Bank>>>(Result.Pending)
+    val banks: StateFlow<Result<List<Bank>>> = _banks.asStateFlow()
 
-    private val _activeAccount = mutableStateOf(Account(0, null, "Loading", 0.0))
+    private val _activeAccount = mutableStateOf<Account?>(null)
     val activeAccount get() = _activeAccount
 
     init {
         loadCurrentUser()
-        getUserData()
     }
 
     // Auth ////////////////////////////////////////////////////////////////////////////////////////
 
     fun getUserData() {
-        currentUser.value?.let { user ->
+        getUserAccounts()
+        getUserTransactions()
+        getUserCategories()
+        getBanks()
+    }
+
+    fun updateActiveAccount(account: Account) {
+        _activeAccount.value = account
+    }
+
+    fun getUserAccounts() {
+        if (currentUser.value is Result.Success) {
             viewModelScope.launch {
-                repository.getUserAccountsByUserId(user.id).collect {
-                    _accounts.value = it
+                _accounts.value = Result.Loading
+                try {
+                    repository.getUserAccountsByUserId((currentUser.value as Result.Success).data.id)
+                        .collect {
+                            _accounts.value = Result.Success(it)
+                        }
+                } catch (e: Exception) {
+                    _accounts.value = Result.Error(e)
                 }
             }
+        }
+    }
+
+    fun getUserTransactions() {
+        if (currentUser.value is Result.Success) {
             viewModelScope.launch {
-                repository.getUserTransactionsByUserId(user.id).collect {
-                    _transactions.value = it
+                _transactions.value = Result.Loading
+                try {
+                    repository.getUserTransactionsByUserId((currentUser.value as Result.Success).data.id)
+                        .collect {
+                            _transactions.value = Result.Success(it)
+                        }
+                } catch (e: Exception) {
+                    _transactions.value = Result.Error(e)
                 }
             }
+        }
+    }
+
+    fun getUserCategories() {
+        if (currentUser.value is Result.Success) {
             viewModelScope.launch {
-                repository.getCategoriesByUserId(user.id).collect {
-                    _categories.value = it
+                _categories.value = Result.Loading
+                try {
+                    repository.getCategoriesByUserId((currentUser.value as Result.Success).data.id)
+                        .collect {
+                            _categories.value = Result.Success(it)
+                        }
+                } catch (e: Exception) {
+                    _categories.value = Result.Error(e)
                 }
             }
-            viewModelScope.launch {
+        }
+    }
+
+    fun getBanks() {
+        viewModelScope.launch {
+            _banks.value = Result.Loading
+            try {
                 repository.getBanks().collect {
-                    _banks.value = it
+                    _banks.value = Result.Success(it)
                 }
+            } catch (e: Exception) {
+                _banks.value = Result.Error(e)
             }
         }
     }
@@ -79,12 +126,16 @@ class MoneyViewModel(
         errorsList: SnapshotStateList<String>
     ) {
         viewModelScope.launch {
-            _currentUser.value = repository.getUserByEmailAndPassword(email, password)
-            if (currentUser.value == null) errorsList.add("Wrong email or password")
-            else {
-                getUserData()
-                saveCurrentUser()
+            _currentUser.value = Result.Loading
+            try {
+                val user = repository.getUserByEmailAndPassword(email, password)
+                _currentUser.value = Result.Success(user, message = "User successfully logged in")
+            } catch (e: Exception) {
+                _currentUser.value = Result.Error(e)
+                errorsList.add(e.message.toString())
             }
+            getUserData()
+            saveCurrentUser()
         }
     }
 
@@ -95,170 +146,267 @@ class MoneyViewModel(
         errorsList: SnapshotStateList<String>
     ) {
         viewModelScope.launch {
-            val userId = repository.insertUser(User(name, email, password))
-            if (userId == -1L) {
-                errorsList.add("Email is already in use")
-            } else {
-                _currentUser.value = repository.getUserById(userId)
-                getUserData()
-                saveCurrentUser()
+            _currentUser.value = Result.Loading
+            try {
+                val user = repository.insertUser(User(name, email, password))
+                _currentUser.value = Result.Success(
+                    user,
+                    message = "User successfully registered"
+                )
+            } catch (e: Exception) {
+                _currentUser.value = Result.Error(e)
+                errorsList.add(e.message.toString())
             }
+            getUserData()
+            saveCurrentUser()
         }
     }
 
     private fun saveCurrentUser() {
-        currentUser.value?.let { user ->
+        if (currentUser.value is Result.Success) {
+            val user = (currentUser.value as Result.Success).data
             sharedPreferences.edit().apply {
-                putLong("userId", user.id)
+                putString("email", user.email)
+                putString("password", user.password)
                 apply()
             }
         }
     }
 
     private fun loadCurrentUser() {
-        val userId: Long = sharedPreferences.getLong("userId", -1L)
+        val email: String? = sharedPreferences.getString("email", null)
+        val password: String? = sharedPreferences.getString("password", null)
+        if (email.isNullOrEmpty() || password.isNullOrEmpty()) {
+            _currentUser.value = Result.Error(NullPointerException())
+            return
+        }
         viewModelScope.launch {
-            repository.getUserById(userId)?.let {
-                _currentUser.value = it
+            var user: User? = null
+            try {
+                user = repository.getUserByEmailAndPassword(email, password)
+            } catch (e: Exception) {
+                _currentUser.value = Result.Error(e)
+            }
+            if (user != null) {
+                _currentUser.value = Result.Success(user)
                 getUserData()
             }
         }
     }
 
     fun removeCurrentUser() {
-        sharedPreferences.edit().remove("userId").apply()
-        _currentUser.value = null
-        _accounts.value = emptyList()
-        _transactions.value = emptyList()
+        sharedPreferences.edit().remove("email").remove("password").apply()
+        _currentUser.value = Result.Pending
+        _accounts.value = Result.Pending
+        _transactions.value = Result.Pending
+        _categories.value = Result.Pending
     }
 
     // User ////////////////////////////////////////////////////////////////////////////////////////
 
     fun updateUser(
         user: User,
-        isSuccessfullyUpdate: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
+        result: MutableState<Result<User>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<User>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            isSuccessfullyUpdate.value = repository.updateUser(user) == 1
-            if (isSuccessfullyUpdate.value == true) _currentUser.value = user
+            try {
+                repository.updateUser(user)
+                _currentUser.value =
+                    Result.Success(user, message = "User name successfully updated")
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
-    fun deleteUser(user: User) {
+    fun deleteUser(
+        user: User,
+        result: MutableState<Result<String>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<String>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            repository.deleteUser(user)
+            try {
+                repository.deleteUser(user)
+                result.value = Result.Success("deleteUser", message = "User successfully deleted")
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
     // Account /////////////////////////////////////////////////////////////////////////////////////
     fun insertAccount(
         account: Account,
-        isSuccessfullyAdded: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
+        result: MutableState<Result<Account>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<Account>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            isSuccessfullyAdded.value = repository.insertAccount(account) != -1L
-
+            try {
+                val insertedAccount = repository.insertAccount(account)
+                result.value = Result.Success(
+                    data = insertedAccount, message = "Account successfully added"
+                )
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
     fun updateAccount(
         account: Account,
-        isSuccessfullyUpdate: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
+        result: MutableState<Result<Account>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<Account>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            isSuccessfullyUpdate.value = repository.updateAccount(account) == 1
-            if (isSuccessfullyUpdate.value == true) _activeAccount.value = account
+            try {
+                repository.updateAccount(account)
+                result.value = Result.Success(account, message = "Account successfully updated")
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
-    fun deleteAccount(account: Account) {
+    fun deleteAccount(
+        account: Account,
+        result: MutableState<Result<String>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<String>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            repository.deleteAccount(account)
+            try {
+                repository.deleteAccount(account)
+                result.value =
+                    Result.Success("deleteAccount", message = "Account successfully deleted")
+            } catch (e: Exception) {
+                result.value
+            }
         }
-    }
-
-    fun updateActiveAccount(account: Account) {
-        _activeAccount.value = account
+        return result
     }
 
     // Transaction /////////////////////////////////////////////////////////////////////////////////
     fun insertTransaction(
         transaction: Transaction,
-        transactionId: MutableState<Long?> = mutableStateOf(null)
-    ) {
+        account: Account,
+        categoryId: Long? = null,
+        result: MutableState<Result<Transaction>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<Transaction>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            transactionId.value = repository.insertTransaction(transaction)
+            try {
+                val transactionId = repository.insertTransaction(transaction, account, categoryId)
+                result.value = Result.Success(transaction.copy(id = transactionId))
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
     fun updateTransaction(
-        transaction: Transaction,
-        isSuccessfullyUpdate: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
+        oldTransaction: Transaction,
+        newTransaction: Transaction,
+        oldAccount: Account,
+        newAccount: Account,
+        oldCategory: Category?,
+        newCategory: Category?,
+        result: MutableState<Result<Transaction>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<Transaction>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            isSuccessfullyUpdate.value = repository.updateTransaction(transaction) == 1
+            try {
+                repository.updateTransaction(
+                    oldTransaction,
+                    newTransaction,
+                    oldAccount,
+                    newAccount,
+                    oldCategory,
+                    newCategory
+                )
+                result.value = Result.Success(newTransaction, "Transaction successfully updated")
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
-    fun deleteTransaction(transaction: Transaction) {
+    fun deleteTransaction(
+        transaction: Transaction,
+        result: MutableState<Result<String>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<String>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            repository.deleteTransaction(transaction)
+            try {
+                repository.deleteTransaction(transaction)
+                result.value =
+                    Result.Success("deleteTransaction", "Transaction successfully deleted")
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
     // Category ////////////////////////////////////////////////////////////////////////////////////
 
     fun insertCategory(
         category: Category,
-        isSuccessfullyAdded: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
+        result: MutableState<Result<Category>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<Category>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            isSuccessfullyAdded.value = repository.insertCategory(category) != -1L
+            try {
+                val insertedCategory = repository.insertCategory(category)
+                result.value = Result.Success(
+                    data = insertedCategory,
+                    message = "Category successfully added"
+                )
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
     fun updateCategory(
         category: Category,
-        isSuccessfullyUpdate: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
+        result: MutableState<Result<Category>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<Category>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            isSuccessfullyUpdate.value = repository.updateCategory(category) == 1
+            try {
+                repository.updateCategory(category)
+                result.value = Result.Success(
+                    data = category,
+                    message = "Category successfully added"
+                )
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
+        return result
     }
 
-    fun deleteCategory(category: Category) {
+    fun deleteCategory(
+        category: Category,
+        result: MutableState<Result<String>> = mutableStateOf(Result.Pending)
+    ): MutableState<Result<String>> {
+        result.value = Result.Loading
         viewModelScope.launch {
-            repository.deleteCategory(category)
+            try {
+                repository.deleteCategory(category)
+                result.value =
+                    Result.Success("deleteCategory", message = "Category successfully deleted")
+            } catch (e: Exception) {
+                result.value = Result.Error(e)
+            }
         }
-    }
-
-    // Category ////////////////////////////////////////////////////////////////////////////////////
-
-    fun insertTransactionCategory(
-        transactionCategory: TransactionCategory,
-        isSuccessfullyAdded: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
-        viewModelScope.launch {
-            isSuccessfullyAdded.value =
-                repository.insertTransactionCategory(transactionCategory) != -1L
-        }
-    }
-
-    fun updateTransactionCategory(
-        old: TransactionCategory,
-        new: TransactionCategory,
-        isSuccessfullyUpdated: MutableState<Boolean?> = mutableStateOf(null)
-    ) {
-        viewModelScope.launch {
-            isSuccessfullyUpdated.value = repository.replaceTransactionCategory(old, new) != -1L
-        }
-    }
-
-    fun deleteTransactionCategory(
-        transactionCategory: TransactionCategory
-    ) {
-        viewModelScope.launch {
-            repository.deleteTransactionCategory(transactionCategory)
-        }
+        return result
     }
 }

@@ -34,6 +34,7 @@ import com.example.moneyapp.data.source.local.roomdb.entity.Operation
 import com.example.moneyapp.data.source.local.roomdb.entity.Transaction
 import com.example.moneyapp.data.source.local.roomdb.entity.TransactionCategory
 import com.example.moneyapp.presentation.ui.screens.main.components.OptionsExposedDropdownMenuBox
+import com.example.moneyapp.presentation.utils.Result
 import java.util.Calendar
 import kotlin.math.round
 
@@ -44,7 +45,7 @@ fun InsertTransactionDialog(
     iniAccountId: Long? = null,
     insertTransaction: (transaction: Transaction, transactionId: MutableState<Long?>) -> Unit,
     insertTransactionCategory: (transactionCategory: TransactionCategory, isSuccessfullyAdded: MutableState<Boolean?>) -> Unit,
-    updateAccount: (account: Account, isSuccessfullyUpdated: MutableState<Boolean?>) -> Unit,
+    updateAccount: (account: Account, result: MutableState<Result<Account>>) -> Unit,
     accounts: List<Account>,
     categories: List<Category>
 ) {

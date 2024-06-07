@@ -63,10 +63,10 @@ fun FloatingButton(viewModel: MoneyViewModel, navController: NavHostController) 
                 isSuccessfullyAdded
             )
         },
-        updateAccount = { account, isSuccessfullyUpdated ->
+        updateAccount = { account, result ->
             viewModel.updateAccount(
                 account,
-                isSuccessfullyUpdated
+                result
             )
         },
         accounts = viewModel.accounts.collectAsState().value,

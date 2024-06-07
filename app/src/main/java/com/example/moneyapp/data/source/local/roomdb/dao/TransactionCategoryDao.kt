@@ -8,8 +8,8 @@ import com.example.moneyapp.data.source.local.roomdb.entity.TransactionCategory
 
 @Dao
 interface TransactionCategoryDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertTransactionCategory(transactionCategory: TransactionCategory) : Long
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertTransactionCategory(transactionCategory: TransactionCategory)
 
     @Delete
     suspend fun deleteTransactionCategory(transactionCategory: TransactionCategory)

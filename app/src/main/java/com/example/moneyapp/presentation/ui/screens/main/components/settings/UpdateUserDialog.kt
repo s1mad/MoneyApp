@@ -87,8 +87,11 @@ fun UpdateUserDialog(
 
         ConfirmDeleteDialog(
             showConfirmDialog = showConfirmDeletedDialog,
-            delete = { viewModel.deleteUser(user) },
-            onComplete = { viewModel.removeCurrentUser() }
+            delete = { result -> viewModel.deleteUser(user, result) },
+            onComplete = {
+                isUpdateUser.value = false
+                viewModel.removeCurrentUser()
+            }
         )
     }
 }

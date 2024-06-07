@@ -1,4 +1,4 @@
-package com.example.moneyapp.presentation.ui.screens.main.utils
+package com.example.moneyapp.presentation.utils
 
 import java.text.NumberFormat
 import java.util.Locale

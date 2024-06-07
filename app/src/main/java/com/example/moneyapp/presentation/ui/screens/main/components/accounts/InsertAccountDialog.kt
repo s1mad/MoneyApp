@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.moneyapp.data.source.local.roomdb.entity.Account
 import com.example.moneyapp.presentation.ui.screens.main.components.OptionsExposedDropdownMenuBox
+import com.example.moneyapp.presentation.utils.Result
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 import kotlin.math.round
 
@@ -35,7 +36,7 @@ fun InsertAccountDialog(
         val balance = remember { mutableStateOf("") }
         val bankId = remember { mutableStateOf<Long?>(null) }
 
-        val isSuccessfullyAdded = remember { mutableStateOf<Boolean?>(null) }
+        val result = remember { mutableStateOf<Result<Account>>(Result.Pending) }
         val context = LocalContext.current
 
         AlertDialog(
@@ -93,18 +94,28 @@ fun InsertAccountDialog(
                                 bankId = bankId.value,
                                 balance = round(balance.value.toDouble() * 100) / 100
                             ),
-                            isSuccessfullyAdded
+                            result
                         )
                     }
                 }) {
                     Text(text = "Add")
                 }
-            })
-        if (isSuccessfullyAdded.value == true) {
-            Toast.makeText(context, "Account successfully added", Toast.LENGTH_LONG).show()
-            isInsertAccount.value = false
-        } else if (isSuccessfullyAdded.value == false) {
-            Toast.makeText(context, "Name already in use", Toast.LENGTH_LONG).show()
+            }
+        )
+
+        when (result.value) {
+            is Result.Success -> {
+                val message = (result.value as Result.Success).message
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                isInsertAccount.value = false
+            }
+
+            is Result.Error -> {
+                val message = (result.value as Result.Error).exception.message
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+
+            else -> {}
         }
     }
 }

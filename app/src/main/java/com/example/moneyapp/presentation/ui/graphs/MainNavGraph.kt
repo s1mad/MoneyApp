@@ -1,5 +1,6 @@
 package com.example.moneyapp.presentation.ui.graphs
 
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -10,6 +11,7 @@ import com.example.moneyapp.presentation.ui.screens.main.AccountsScreen
 import com.example.moneyapp.presentation.ui.screens.main.CategoriesScreen
 import com.example.moneyapp.presentation.ui.screens.main.SettingsScreen
 import com.example.moneyapp.presentation.ui.screens.main.TransactionsScreen
+import com.example.moneyapp.presentation.utils.Result
 import com.example.moneyapp.presentation.viewmodel.MoneyViewModel
 
 @Composable
@@ -30,24 +32,30 @@ fun MainNavigationGraph(
                 viewModel = viewModel
             )
         }
-        composable(route = MainScreen.AccountDetails.route) {backStackEntry ->
+        composable(route = MainScreen.AccountDetails.route) { backStackEntry ->
             AccountDetailsScreen(
                 viewModel = viewModel,
                 modifier = modifier,
-                accountId = backStackEntry.arguments?.getString("accountId")?.toLongOrNull() ?: -1L
+                accountId = backStackEntry.arguments?.getString("accountId")?.toLongOrNull()
+                    ?: -1L
             )
         }
         composable(route = MainScreen.Transactions.route) {
             TransactionsScreen(viewModel = viewModel, modifier = modifier)
         }
         composable(route = MainScreen.Settings.route) {
-            SettingsScreen(viewModel = viewModel, navController = navController, modifier = modifier)
+            SettingsScreen(
+                viewModel = viewModel,
+                navController = navController,
+                modifier = modifier
+            )
         }
         composable(route = MainScreen.Categories.route) {
             CategoriesScreen(viewModel = viewModel, modifier = modifier)
         }
     }
 }
+
 
 sealed class MainScreen(val route: String) {
     data object Accounts : MainScreen(route = "ACCOUNTS")

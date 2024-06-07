@@ -1,4 +1,4 @@
-package com.example.moneyapp.presentation.ui.screens.auth
+package com.example.moneyapp.presentation.utils
 
 fun getErrorsList(
     email: String,
